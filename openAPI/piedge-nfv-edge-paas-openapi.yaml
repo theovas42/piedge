@@ -1,0 +1,208 @@
+openapi: 3.0.0
+info:
+  description: >
+    API exposed by Edge Management Platforms (EMP) for PaaS-based interaction with NFV MANO.
+  version: 1.0.0
+  title: Edge PaaS Management API
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: theovas@intracom-telecom.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+paths:
+  /registration:
+    post:
+      summary: Request to register to Edge Management Platform.
+      operationId: registrationStore
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/empRegistrationRequest"
+        description: Registration Request sent by Edge Service Consumer (e.g. NFV MANO) to EMP.
+      responses:
+        "200":
+          description: Returns the EMP name and type, the status of the registration and the service consumer ID that is
+            assigned by the EMP for subsequent interactions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/empRegistrationResponse"
+  /serviceAnnouncement:
+    post:
+      summary: Query available Edge Services.
+      operationId: empDStore
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/servicesQuery"
+        description: Query sent by service consumer to discover available edge services, optionally including a query String to filter out EMP information
+      responses:
+        "200":
+          description: Descriptor returned by the Edge Orchestration Platform (EMP) with up to date information on Egde PoPs and Edge Services
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/empD"
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+  - url: https://virtserver.swaggerhub.com/vtheodorou/NFV-Edge-PaaS/1.0.0
+  - url: http://virtserver.swaggerhub.com/vtheodorou/NFV-Edge-PaaS/1.0.0
+components:
+  securitySchemes:
+    registry_auth:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: http://serviceregistry.swagger.io/oauth/dialog
+          scopes:
+            write:services: modify services in your account
+            read:services: read your services
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
+  schemas:
+    empD:
+      type: object
+      properties:
+        vnfSupport:
+          type: boolean
+        cnfSupport:
+          type: boolean
+        paasServices:
+          type: array
+          items:
+            type: object
+            properties:
+              paasName:
+                type: string
+              paasType:
+                type: string
+                example: generic
+              scaleOut:
+                type: boolean  
+              configurability:
+                type: object
+                properties:
+                  foo:
+                    type: string
+        edgePoPs:
+          type: array
+          items:
+            type: object
+            properties:
+              popName:
+                type: string
+              interconnectivitySupport:
+                type: object
+                properties:
+                  tunnelling:
+                    type: string
+                    enum: [gre, vxlan, gtp_u]
+              coverage:
+                type: object
+                properties:
+                  zonelist:
+                    $ref: '#/components/schemas/ZoneList'   
+              kpis:
+                type: object
+                properties:
+                  availability:
+                    type: string
+                  latency:
+                    type: string
+      xml:
+        name: empD
+    NumberOfAccessPoints:
+      description: The number of access points within the zone
+      type: integer
+      format: uint32
+      example: '10'
+    NumberOfUnserviceableAccessPoints:
+      description: Number of inoperable access points within the zone.
+      type: integer
+      format: uint32
+      example: '9'
+    NumberOfUsers:
+      description: The number of users currently on the access point.
+      type: integer
+      format: uint32
+      example: '7'
+    ResourceURL:
+      description: Self referring URL.
+      type: string
+      format: uri
+      example: 'http://example.com/exampleAPI/location/v1/subscriptions/userTracking/subscription123'  
+    ZoneId:
+      description: Identifier of zone
+      type: string
+      example: zone01
+    ZoneInfo:
+      description: A type containing zone information.
+      type: object
+      required:
+        - zoneId
+        - numberOfAccessPoints
+        - numberOfUnservicableAccessPoints
+        - numberOfUsers
+        - resourceURL
+      properties:
+        zoneId:
+          $ref: '#/components/schemas/ZoneId'
+        numberOfAccessPoints:
+          $ref: '#/components/schemas/NumberOfAccessPoints'
+        numberOfUnservicableAccessPoints:
+          $ref: '#/components/schemas/NumberOfUnserviceableAccessPoints'
+        numberOfUsers:
+          $ref: '#/components/schemas/NumberOfUsers'
+        resourceURL:
+          $ref: '#/components/schemas/ResourceURL'
+    ZoneList:
+      description: Collection of the zone information list.
+      type: object
+      required:
+        - resourceURL
+      properties:
+        zone:
+          description: Collection of the zone information list.
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneInfo'
+        resourceURL:
+          $ref: '#/components/schemas/ResourceURL'        
+    empRegistrationRequest:
+      type: object
+      properties:
+        serviceConsumerName:
+          type: string
+        empAuthCredentials:
+          type: object
+          properties:
+            username: 
+              type: string
+            password: 
+              type: string
+    empRegistrationResponse:
+      type: object
+      properties:
+        empName:
+          type: string
+        empType:
+          type: string
+          example: "openness"      
+        registrationStatus:
+          type: string
+        serviceConsumerId:
+          type: string
+    servicesQuery:
+      type: object
+      properties:
+        serviceConsumerId:
+          type: string
+        queryString:
+          type: string          
